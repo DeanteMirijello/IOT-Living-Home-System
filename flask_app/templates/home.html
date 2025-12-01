@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Smart Home Dashboard</h1>
+
+<canvas id="tempChart" height="120"></canvas>
+<canvas id="humidityChart" height="120" style="margin-top: 40px;"></canvas>
+<canvas id="motionChart" height="120" style="margin-top: 40px;"></canvas>
+
+<!-- MOVE SCRIPT HERE — after canvas elements -->
+<script>
+
+// General function to fetch feed data
+async function getFeed(feed) {
+    const res = await fetch(`/api/live/${feed}`);
+    const data = await res.json();
+    return data;
+}
+
+// Convert Adafruit IO format → chart-ready format
+function parseAIO(data) {
+    const labels = data.map(d => new Date(d.created_at).toLocaleTimeString());
+    const values = data.map(d => parseFloat(d.value));
+    return { labels, values };
+}
+
+async function updateCharts() {
+    // Temperature
+    const tData = parseAIO(await getFeed("temperature"));
+    tempChart.data.labels = tData.labels;
+    tempChart.data.datasets[0].data = tData.values;
+    tempChart.update();
+
+    // Humidity
+    const hData = parseAIO(await getFeed("humidity"));
+    humidityChart.data.labels = hData.labels;
+    humidityChart.data.datasets[0].data = hData.values;
+    humidityChart.update();
+
+    // Motion
+    const mData = parseAIO(await getFeed("motion"));
+    motionChart.data.labels = mData.labels;
+    motionChart.data.datasets[0].data = mData.values;
+    motionChart.update();
+}
+
+// Temperature chart
+const tempChart = new Chart(document.getElementById("tempChart"), {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Temperature (°C)",
+            borderColor: "red",
+            data: []
+        }]
+    }
+});
+
+// Humidity chart
+const humidityChart = new Chart(document.getElementById("humidityChart"), {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Humidity (%)",
+            borderColor: "blue",
+            data: []
+        }]
+    }
+});
+
+// Motion chart
+const motionChart = new Chart(document.getElementById("motionChart"), {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Motion (0 or 1)",
+            borderColor: "green",
+            data: []
+        }]
+    }
+});
+
+// Refresh every 5 seconds
+setInterval(updateCharts, 5000);
+
+// First load
+updateCharts();
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Environmental Data</h1>
+
+<label>Select date:</label><br>
+<input type="date" id="datePicker"><br><br>
+
+<label>Select sensor:</label><br>
+<select id="sensorSelect">
+    <option value="temperature">Temperature</option>
+    <option value="humidity">Humidity</option>
+    <option value="motion">Motion</option>
+</select><br><br>
+
+<button onclick="loadHistory()">Load Data</button>
+
+<hr>
+
+<canvas id="historyChart" height="140"></canvas>
+
+<script>
+
+let historyChart = new Chart(document.getElementById("historyChart"), {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Sensor Data",
+            borderColor: "purple",
+            data: []
+        }]
+    }
+});
+
+async function loadHistory() {
+    let date = document.getElementById("datePicker").value;
+    let sensor = document.getElementById("sensorSelect").value;
+
+    if (!date) {
+        alert("Please choose a date");
+        return;
+    }
+
+    const res = await fetch(`/api/history/${sensor}/${date}`);
+    const data = await res.json();
+
+    const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+    const values = data.map(d => d.value);
+
+    historyChart.data.labels = labels;
+    historyChart.data.datasets[0].data = values;
+    historyChart.data.datasets[0].label = `${sensor} data`;
+
+    historyChart.update();
+}
+
+</script>
+
+{% endblock %}

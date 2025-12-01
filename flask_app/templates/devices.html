@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Device Control</h1>
+
+<h2>LEDs</h2>
+<button onclick="send('led-yellow','on')">Yellow ON</button>
+<button onclick="send('led-yellow','off')">Yellow OFF</button><br><br>
+
+<button onclick="send('led-green','on')">Green ON</button>
+<button onclick="send('led-green','off')">Green OFF</button><br><br>
+
+<button onclick="send('led-red','on')">Red ON</button>
+<button onclick="send('led-red','off')">Red OFF</button>
+
+<hr>
+
+<h2>Buzzer</h2>
+<button onclick="send('buzzer','on')">Buzzer ON</button>
+<button onclick="send('buzzer','off')">Buzzer OFF</button>
+<button onclick="send('buzzer','beep')">Beep</button>
+
+<hr>
+
+<h2>Servo</h2>
+<button onclick="send('servo','open')">Open (90°)</button>
+<button onclick="send('servo','close')">Close (0°)</button>
+<br><br>
+
+<label>Set angle (0–180):</label>
+<input id="servoAngle" type="number" min="0" max="180" value="90">
+<button onclick="setServoAngle()">Set Angle</button>
+
+<script>
+async function send(feed, value) {
+    await fetch(`/api/device/${feed}/${value}`, { method: "POST" });
+}
+
+function setServoAngle() {
+    let a = document.getElementById("servoAngle").value;
+    send("servo", a);
+}
+</script>
+
+{% endblock %}

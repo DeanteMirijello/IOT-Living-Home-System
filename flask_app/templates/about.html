@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>About This Project</h1>
+
+<p>
+    This Smart Home Automation & Security System was created as part of the 
+    <strong>Fall 2025 IoT: Design and Prototyping of Connected Devices</strong> course.
+</p>
+
+<h2>Project Overview</h2>
+<p>
+    This system integrates multiple sensors, actuators, and cloud services to provide 
+    real-time monitoring, automation, and remote control capabilities. 
+</p>
+
+<ul>
+    <li>DHT22 sensor for temperature & humidity monitoring</li>
+    <li>PIR motion sensor for security/intrusion detection</li>
+    <li>Three LEDs (yellow/green/red) for status indicators</li>
+    <li>Servo motor for door/lock control</li>
+    <li>Buzzer for alerts</li>
+    <li>Adafruit IO for cloud communication (MQTT + REST API)</li>
+    <li>Flask Web App using Chart.js for live & historical data visualization</li>
+    <li>NeonDB (PostgreSQL) for cloud-based historical data storage</li>
+</ul>
+
+<h2>System Features</h2>
+<ul>
+    <li>Live sensor dashboard with real-time charts</li>
+    <li>Historical environmental data visualization</li>
+    <li>Security system control + intrusion logs</li>
+    <li>Remote device control (LEDs, servo, buzzer)</li>
+</ul>
+
+<h2>Architecture</h2>
+<p>
+    The Raspberry Pi reads the sensors and controls the actuators.  
+    It publishes data to Adafruit IO and stores time-series data 
+    in a cloud PostgreSQL database (NeonDB).  
+    The Flask web application retrieves data from both the cloud and local APIs,
+    displaying it to the user through interactive charts and controls.
+</p>
+
+<h2>Team / Author</h2>
+<p>
+    Developed by: <strong>Deante Mirijello and Mirko Di Criscio</strong><br>
+    GitHub Repository: <em>https://github.com/DeanteMirijello/IOT_Project</em>
+</p>
+
+{% endblock %}

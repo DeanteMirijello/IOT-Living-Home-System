@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Security System</h1>
+
+<h3>System Status: <span id="secStatus">Loading...</span></h3>
+
+<button onclick="setSecurity('on')">Enable Security</button>
+<button onclick="setSecurity('off')" style="margin-left:10px;">Disable Security</button>
+
+<hr>
+
+<h2>Intrusion History</h2>
+
+<label>Select date:</label><br>
+<input type="date" id="intrusionDate"><br><br>
+
+<button onclick="loadIntrusions()">Load Intrusions</button>
+
+<ul id="intrusionList"></ul>
+
+<script>
+// Fetch current security status
+async function fetchStatus() {
+    const r = await fetch("/api/security/status");
+    const data = await r.json();
+    document.getElementById("secStatus").textContent = data.status;
+}
+
+// Enable/Disable security
+async function setSecurity(state) {
+    await fetch(`/api/security/set/${state}`, { method: "POST" });
+    fetchStatus();
+}
+
+// Load intrusions
+async function loadIntrusions() {
+    let date = document.getElementById("intrusionDate").value;
+    if (!date) {
+        alert("Choose a date!");
+        return;
+    }
+
+    const res = await fetch(`/api/intrusions/${date}`);
+    const entries = await res.json();
+
+    const list = document.getElementById("intrusionList");
+    list.innerHTML = "";
+
+    if (entries.length === 0) {
+        list.innerHTML = "<li>No intrusions detected.</li>";
+        return;
+    }
+
+    entries.forEach(e => {
+        const item = document.createElement("li");
+        item.textContent = new Date(e.timestamp).toLocaleTimeString();
+        list.appendChild(item);
+    });
+}
+
+// Initial load
+fetchStatus();
+
+</script>
+
+{% endblock %}
