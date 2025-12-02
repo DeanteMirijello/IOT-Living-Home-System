@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Smart Home Automations (modular) + Adafruit IO
-- Uses leds.py, servo_unit.py, dht_sensor.py, buzzer_unit.py, motion_detector.py
-- Reads config.json (username/key, pins, intervals, rate limits, feeds)
-- Publishes states to AIO; accepts MQTT commands for leds/buzzer/servo/target-temp
-- Keeps menu-driven UI for local testing
-"""
-
 import os
 import json
 import time
@@ -16,23 +6,19 @@ import threading
 from pathlib import Path
 from datetime import datetime
 
-# ---- Local modules (same pins as you already wired) ----
 import leds
 import servo_unit
 import dht_sensor
 import buzzer_unit
 import motion_detector
 
-# ---- Load config ----
 CONFIG_PATH = Path(__file__).with_name("config.json")
 with open(CONFIG_PATH, "r") as f:
     cfg = json.load(f)
 
-# Credentials: allow env override, else config.json
 ADAFRUIT_IO_USERNAME = os.getenv("AIO_USERNAME", cfg["adafruit"]["username"])
 ADAFRUIT_IO_KEY      = os.getenv("AIO_KEY", cfg["adafruit"]["key"])
 
-# Intervals / limits / feeds
 sensor_publish_interval = int(cfg["intervals"]["sensor_publish_seconds"])
 heartbeat_interval      = int(cfg["intervals"]["heartbeat_seconds"])
 GLOBAL_MIN_GAP          = float(cfg["rate_limits"]["global_min_gap"])
@@ -42,7 +28,6 @@ MOTION_QUIET_REQUIRED   = float(cfg["motion"]["quiet_required"])
 FEEDS                   = list(cfg["feeds"])
 target_temp_c           = float(cfg.get("target_temp_c", 26.0))
 
-# ---- Adafruit IO ----
 from Adafruit_IO import Client as AIOClient, MQTTClient as AIOMQTT, Feed, RequestError
 aio_rest = AIOClient(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
 aio_mqtt = AIOMQTT(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
@@ -67,7 +52,6 @@ def ensure_required_feeds():
             except Exception as e:
                 print(f"[AIO] Could not create '{name}': {e} (continuing)")
 
-# ---- Rate limiting state ----
 last_sent_at     = {k: 0.0 for k in PER_FEED_MIN}
 last_global_send = 0.0
 backoff_until    = 0.0
@@ -79,7 +63,7 @@ last_states = {
     "led-green":  0,
     "led-red":    0,
     "buzzer":     0,
-    "servo":      0,  # angle
+    "servo":      0,
     "target-temp": target_temp_c,
 }
 
@@ -121,7 +105,6 @@ def publish_if_changed(feed, value):
     if last_states.get(feed) != value:
         publish(feed, value)
         
-# ---- MQTT callbacks ----
 def mqtt_connected(client):
     print("[AIO-MQTT] Connected. Subscribing...")
     for name in FEEDS:
@@ -134,14 +117,10 @@ def mqtt_disconnected(client):
     print("[AIO-MQTT] Disconnected. Reconnecting when possible...")
 
 
-# ---- MQTT callbacks ----
 def mqtt_message(client, feed_id, payload):
     global target_temp_c
     val = str(payload).strip().lower()
     try:
-        # ------------------------
-        # LED + BUZZER HANDLING
-        # ------------------------
         if feed_id in ("led-yellow", "led-green", "led-red", "buzzer"):
             on = val in ("1", "on", "true", "yes")
 
@@ -165,9 +144,6 @@ def mqtt_message(client, feed_id, payload):
                     buzzer_unit.off()
                     publish_if_changed("buzzer", 0)
 
-        # ------------------------
-        # SERVO HANDLING
-        # ------------------------
         elif feed_id == "servo":
             if val in ("open", "unlock"):
                 servo_unit.set_angle(90)
@@ -185,10 +161,7 @@ def mqtt_message(client, feed_id, payload):
                 except ValueError:
                     print("[AIO-MQTT] servo expects angle/open/close")
 
-        # ------------------------
-        # SECURITY SYSTEM HANDLING
-        # ------------------------
-        elif feed_id == "security-system":
+        elif feed_id == "alerts":
             state = val  # already lowercase
 
             if state in ("on", "1", "true", "yes"):
@@ -198,7 +171,7 @@ def mqtt_message(client, feed_id, payload):
                 except Exception as e:
                     print("Error enabling motion detector:", e)
 
-                publish_if_changed("security-system", 1)
+                publish_if_changed("alerts", 1)
 
             elif state in ("off", "0", "false", "no"):
                 print("🔓 SECURITY SYSTEM DISABLED")
@@ -207,11 +180,8 @@ def mqtt_message(client, feed_id, payload):
                 except Exception as e:
                     print("Error disabling motion detector:", e)
 
-                publish_if_changed("security-system", 0)
+                publish_if_changed("alerts", 0)
 
-        # ------------------------
-        # TARGET TEMP HANDLING
-        # ------------------------
         elif feed_id == "target-temp":
             try:
                 target_temp_c = float(val)
@@ -227,13 +197,11 @@ aio_mqtt.on_connect    = mqtt_connected
 aio_mqtt.on_disconnect = mqtt_disconnected
 aio_mqtt.on_message    = mqtt_message
 
-# ---- Threads: sensors, heartbeat, motion-reset ----
 running = True
 _motion_reset_timer = None
 _motion_lock = threading.Lock()
 
 def motion_mark_clear_after(delay):
-    """Clear motion feed after 'delay' seconds."""
     def _clear():
         with _motion_lock:
             publish_if_changed("motion", 0)
@@ -243,7 +211,6 @@ def motion_mark_clear_after(delay):
     return t
 
 def motion_callback():
-    """Called by motion_detector when a rising motion edge is detected."""
     print("⚠️  Motion detected!")
     leds.on("green")
     buzzer_unit.beep(0.2)
@@ -252,19 +219,16 @@ def motion_callback():
 
     timestamp = datetime.utcnow().isoformat()
 
-    # ---- CLOUD + LOCAL LOGGING ----
     try:
         insert_cloud("motion", 1, timestamp)
     except:
         insert_local("motion", 1, timestamp)
 
-    # Try sync
     try:
         sync_local_to_cloud()
     except:
         pass
 
-    # Reset motion feed after quiet period
     with _motion_lock:
         publish_if_changed("motion", 1)
         global _motion_reset_timer
@@ -281,7 +245,6 @@ def sensor_loop():
             if t is not None and h is not None:
                 timestamp = datetime.utcnow().isoformat()
 
-                # ---- CLOUD + LOCAL LOGGING ----
                 try:
                     insert_cloud("temperature", t, timestamp)
                     insert_cloud("humidity", h, timestamp)
@@ -289,17 +252,14 @@ def sensor_loop():
                     insert_local("temperature", t, timestamp)
                     insert_local("humidity", h, timestamp)
 
-                # Try to sync offline data (won't crash)
                 try:
                     sync_local_to_cloud()
                 except:
                     print("Cloud sync failed (offline?)")
 
-                # ---- AIO PUBLISHING ----
                 publish_if_changed("temperature", round(t, 2))
                 publish_if_changed("humidity", round(h, 2))
 
-                # simple thermostat-led demo
                 if t > target_temp_c:
                     leds.on("yellow");  publish_if_changed("led-yellow", 1)
                 else:
@@ -319,19 +279,17 @@ def heartbeat_loop():
     print("[LOOP] heartbeat_loop started")
     while running:
         try:
-            # Publish current states (avoids stale dashboards)
             st = leds.status()
             publish_if_changed("led-yellow", 1 if st["yellow"] == "ON" else 0)
             publish_if_changed("led-green",  1 if st["green"]  == "ON" else 0)
             publish_if_changed("led-red",    1 if st["red"]    == "ON" else 0)
-            publish_if_changed("buzzer",     0)  # buzzer is momentary; default 0
+            publish_if_changed("buzzer",     0)
             publish_if_changed("servo",      servo_unit.get_angle())
             publish_if_changed("target-temp", target_temp_c)
         except Exception as e:
             print(f"[HEARTBEAT] error: {e}")
         time.sleep(heartbeat_interval)
 
-# ---- Menu UI ----
 def show_menu():
     st = leds.status()
     print("\n=== Smart I/O Panel (AIO-enabled) ===")
@@ -357,14 +315,12 @@ def start_everything():
     ensure_required_feeds()
     init_local_db()
 
-    # MQTT connect (non-blocking loop)
     try:
         aio_mqtt.connect()
         aio_mqtt.loop_background()
     except Exception as e:
         print("[AIO-MQTT] connect failed:", e)
 
-    # Initial publishes
     publish_if_changed("target-temp", target_temp_c)
     publish_if_changed("servo", servo_unit.get_angle())
 
@@ -388,7 +344,6 @@ def stop_everything():
 def main():
     start_everything()
 
-    # background workers
     t_sensors   = threading.Thread(target=sensor_loop,    daemon=True); t_sensors.start()
     t_heartbeat = threading.Thread(target=heartbeat_loop, daemon=True); t_heartbeat.start()
 

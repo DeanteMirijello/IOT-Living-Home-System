@@ -52,7 +52,6 @@
     "led-red",
     "buzzer",
     "servo",
-    "target-temp",
-    "security-system"
+    "target-temp"
   ]
 }
