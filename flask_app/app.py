@@ -4,11 +4,11 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, jsonify
 
-AIO_USERNAME = "DMirijello"
-AIO_KEY = "aio_jqfh45BeNdZJuawgNbHdedQmsuKk"    
-AIO_BASE = f"https://io.adafruit.com/api/v2/DMirijello/feeds"
+AIO_USERNAME = os.getenv("AIO_USERNAME", "DMirijello")
+AIO_KEY = os.getenv("AIO_KEY")  
+AIO_BASE = f"https://io.adafruit.com/api/v2/{AIO_USERNAME}/feeds"
 
-DB_CONN = "postgresql://neondb_owner:npg_SdpFWnquG9t6@ep-jolly-snow-a4ymm7wa-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+DB_CONN = os.getenv("DB_CONN") 
 
 def get_db():
     return psycopg2.connect(DB_CONN, cursor_factory=RealDictCursor)

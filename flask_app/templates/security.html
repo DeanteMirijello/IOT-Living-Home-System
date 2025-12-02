@@ -7,7 +7,11 @@
 {% block content %}
 <h1>Security System</h1>
 
-<h3>System Status: <span id="secStatus">Loading...</span></h3>
+<h3>
+    Security Status: 
+    <span id="secStatus" style="font-weight:bold; padding:4px 10px; border-radius:5px;">Loading...</span>
+</h3>
+
 
 <button onclick="setSecurity('on')">Enable Security</button>
 <button onclick="setSecurity('off')" style="margin-left:10px;">Disable Security</button>
@@ -62,6 +66,23 @@ async function loadIntrusions() {
         list.appendChild(item);
     });
 }
+
+async function fetchStatus() {
+    const r = await fetch("/api/security/status");
+    const data = await r.json();
+    const el = document.getElementById("secStatus");
+
+    if (data.status === "ON" || data.status === "1") {
+        el.textContent = "ENABLED";
+        el.style.backgroundColor = "#16a34a"; // green
+        el.style.color = "white";
+    } else {
+        el.textContent = "DISABLED";
+        el.style.backgroundColor = "#b91c1c"; // red
+        el.style.color = "white";
+    }
+}
+
 
 // Initial load
 fetchStatus();

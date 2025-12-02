@@ -155,6 +155,18 @@ def mqtt_message(client, feed_id, payload):
                 else:
                     buzzer_unit.off()
                     publish_if_changed("buzzer", 0)
+        elif feed_id == "security-system":
+			state = str(payload).strip().lower()
+
+			if state in ("on", "1", "true"):
+				print("🔒 SECURITY SYSTEM ENABLED")
+				motion_detector.start(callback_on_motion=motion_callback)
+				publish_if_changed("security-system", 1)
+
+			elif state in ("off", "0", "false"):
+				print("🔓 SECURITY SYSTEM DISABLED")
+				motion_detector.stop()
+				publish_if_changed("security-system", 0)
 
         elif feed_id == "servo":
             if val in ("open","unlock"):
@@ -443,3 +455,4 @@ def main():
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, lambda *_: stop_everything())
     main()
+
