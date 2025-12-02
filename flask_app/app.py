@@ -43,7 +43,7 @@ def devices():
 @app.route("/api/security/set/<state>", methods=["POST"])
 def set_security(state):
     try:
-        url = f"{AIO_BASE}/security-system/data"
+        url = f"{AIO_BASE}/alerts/data"
         headers = {"X-AIO-Key": AIO_KEY, "Content-Type": "application/json"}
 
         value = "ON" if state.lower() == "on" else "OFF"
@@ -56,7 +56,7 @@ def set_security(state):
 @app.route("/api/security/status")
 def security_status():
     try:
-        url = f"{AIO_BASE}/security-system/data?limit=1"
+        url = f"{AIO_BASE}/alerts/data?limit=1"
         headers = {"X-AIO-Key": AIO_KEY}
         r = requests.get(url, headers=headers)
 

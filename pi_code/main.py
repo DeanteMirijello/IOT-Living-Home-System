@@ -120,7 +120,7 @@ def publish(feed, value):
 def publish_if_changed(feed, value):
     if last_states.get(feed) != value:
         publish(feed, value)
-
+        
 # ---- MQTT callbacks ----
 def mqtt_connected(client):
     print("[AIO-MQTT] Connected. Subscribing...")
@@ -133,21 +133,30 @@ def mqtt_connected(client):
 def mqtt_disconnected(client):
     print("[AIO-MQTT] Disconnected. Reconnecting when possible...")
 
+
+# ---- MQTT callbacks ----
 def mqtt_message(client, feed_id, payload):
     global target_temp_c
     val = str(payload).strip().lower()
     try:
-        if feed_id in ("led-yellow","led-green","led-red","buzzer"):
-            on = val in ("1","on","true","yes")
+        # ------------------------
+        # LED + BUZZER HANDLING
+        # ------------------------
+        if feed_id in ("led-yellow", "led-green", "led-red", "buzzer"):
+            on = val in ("1", "on", "true", "yes")
+
             if feed_id == "led-yellow":
                 leds.on("yellow") if on else leds.off("yellow")
                 publish_if_changed("led-yellow", 1 if on else 0)
+
             elif feed_id == "led-green":
                 leds.on("green") if on else leds.off("green")
                 publish_if_changed("led-green", 1 if on else 0)
+
             elif feed_id == "led-red":
                 leds.on("red") if on else leds.off("red")
                 publish_if_changed("led-red", 1 if on else 0)
+
             elif feed_id == "buzzer":
                 if on:
                     buzzer_unit.on()
@@ -155,24 +164,19 @@ def mqtt_message(client, feed_id, payload):
                 else:
                     buzzer_unit.off()
                     publish_if_changed("buzzer", 0)
-        elif feed_id == "security-system":
-			state = str(payload).strip().lower()
 
-			if state in ("on", "1", "true"):
-				print("🔒 SECURITY SYSTEM ENABLED")
-				motion_detector.start(callback_on_motion=motion_callback)
-				publish_if_changed("security-system", 1)
-
-			elif state in ("off", "0", "false"):
-				print("🔓 SECURITY SYSTEM DISABLED")
-				motion_detector.stop()
-				publish_if_changed("security-system", 0)
-
+        # ------------------------
+        # SERVO HANDLING
+        # ------------------------
         elif feed_id == "servo":
-            if val in ("open","unlock"):
-                servo_unit.set_angle(90);  publish_if_changed("servo", 90)
-            elif val in ("close","lock"):
-                servo_unit.set_angle(0);   publish_if_changed("servo", 0)
+            if val in ("open", "unlock"):
+                servo_unit.set_angle(90)
+                publish_if_changed("servo", 90)
+
+            elif val in ("close", "lock"):
+                servo_unit.set_angle(0)
+                publish_if_changed("servo", 0)
+
             else:
                 try:
                     angle = float(val)
@@ -181,6 +185,33 @@ def mqtt_message(client, feed_id, payload):
                 except ValueError:
                     print("[AIO-MQTT] servo expects angle/open/close")
 
+        # ------------------------
+        # SECURITY SYSTEM HANDLING
+        # ------------------------
+        elif feed_id == "security-system":
+            state = val  # already lowercase
+
+            if state in ("on", "1", "true", "yes"):
+                print("🔒 SECURITY SYSTEM ENABLED")
+                try:
+                    motion_detector.start(callback_on_motion=motion_callback)
+                except Exception as e:
+                    print("Error enabling motion detector:", e)
+
+                publish_if_changed("security-system", 1)
+
+            elif state in ("off", "0", "false", "no"):
+                print("🔓 SECURITY SYSTEM DISABLED")
+                try:
+                    motion_detector.stop()
+                except Exception as e:
+                    print("Error disabling motion detector:", e)
+
+                publish_if_changed("security-system", 0)
+
+        # ------------------------
+        # TARGET TEMP HANDLING
+        # ------------------------
         elif feed_id == "target-temp":
             try:
                 target_temp_c = float(val)
