@@ -6,53 +6,29 @@ Mirko Di Criscio, Deante MiriJello
 System overview and block diagrams
 This project is a complete IoT Smart Home Automation & Security System built around a Raspberry Pi that integrates multiple sensors, actuators, and cloud services to provide real-time monitoring, remote control, and automated security features. The Pi collects temperature, humidity, and motion data using a DHT22 sensor and PIR detector, controls devices such as LEDs, a servo motor, and a buzzer, and communicates with Adafruit IO through MQTT and REST for live dashboards and remote commands. All sensor readings are logged both locally (SQLite) and in a cloud PostgreSQL database (NeonDB), with automatic synchronization whenever the Pi regains internet connectivity. A Flask web application displays live data using Chart.js, shows historical trends retrieved from the cloud database, supports device control, and provides an interface for managing the home security system and viewing intrusion logs. Together, these components form a robust, modular, cloud-connected smart home platform.
 
+Adafruit dashboard 
+  https://io.adafruit.com/DMirijello/dashboards/living-system 
+
 Materials
+  Raspberry Pi 4B 2GB or 4GB version 1 Raspberry Pi 4B
 
-Raspberry Pi 4B 2GB or 4GB version 1 Raspberry Pi 4B
+  PIR Motion Sensor HC-SR501 1
 
-PIR Motion Sensor HC-SR501 1
+  Temperature/Humidity Sensor DHT22 1
 
-Temperature/Humidity Sensor DHT22 1
+  Ultrasonic Sensor HC-SR04 1
 
-Ultrasonic Sensor HC-SR04 1
+  Camera Module Pi Camera v2 1
 
-Camera Module Pi Camera v2 1
+  Actuator LED strip / Fan / Motor driver —
 
-Actuator LED strip / Fan / Motor driver —
+  Buzzer Murata 1
 
-Buzzer Murata 1
+  Servo Motor
 
-Servo Motor
-
-Setup Instructions
-Setup the pi sudo apt update && sudo apt upgrade -y sudo raspi-config # Enable Camera/I2C/SPI as needed
-
-Clone repo git clone https://github.com//.git cd
-
-Create Python Env python3 -m venv venv source venv/bin/activate pip install -r requirements.txt
-
-Configure env AIO_USERNAME=<your_adafruit_io_username> AIO_KEY=<your_adafruit_io_key> WIFI_SSID=<your_wifi_ssid> WIFI_PASS=<your_wifi_password>
-
-Create config/config.json { "feeds": { "temperature": "home.temp", "humidity": "home.humidity", "motion": "home.motion", "light": "home.light", "control_light": "home.control.light", "control_fan": "home.control.fan" }, "thresholds": { "motion_sensitivity": 0.7 }, "logging": { "data_dir": "data/", "upload_time": "00:05" } }
-
-
-How to Run
-cd IOT_Project
-
-python3 main.py
-
-
-Data Format Specifications
-[Unit] Description=IoT System Service After=network.target
-
-[Service] ExecStart=/usr/bin/python3 /home/pi//src/main.py WorkingDirectory=/home/pi/ Restart=on-failure
-
-[Install] WantedBy=multi-user.target
-
-Future Work
-Add OTA (over-the-air) configuration updates
-Improve dashboard UI
-Add data analytics or predictive monitoring
-Optimize camera capture performance
-
-
+Reflection
+  The hardest aspect of this project was working with the Pi camera. After a lot of time and effort I was never able to get it to work. I tried redownloading the Pi OS as well as replugging and rebooting it, but in the end I never got it to work.
+  
+  Most of the other parts worked in the project and it was really nice to see all the parts interact and come together in the end to make one machine. I will definitely keep this project together for a day I would like to show it off or even improve on it.
+  
+  There is, however, still things I would’ve liked to improve on. Apart from getting the camera to work, I would have also liked to make the servo motor open the lid of the box instead of just being a fan. I would also like to add more LEDs that can show when other actuators or sensors are working.
