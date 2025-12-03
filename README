@@ -4,13 +4,9 @@ Team Members
 Mirko Di Criscio, Deante MiriJello
 
 System overview and block diagrams
-This project implements an end-to-end IoT system using a Raspberry Pi 4B sensor, led's, a motor, a camera and a buzzer. The system collects live telemetry, publishes it to Adafruit IO via MQTT, logs data locally with daily rotation, and uploads logs to cloud storage automatically.
-
-Option 1
-Detects motion, sound, and environmental changes, captures images, and provides remote dashboard controls for home devices such as lights and fans.
+This project is a complete IoT Smart Home Automation & Security System built around a Raspberry Pi that integrates multiple sensors, actuators, and cloud services to provide real-time monitoring, remote control, and automated security features. The Pi collects temperature, humidity, and motion data using a DHT22 sensor and PIR detector, controls devices such as LEDs, a servo motor, and a buzzer, and communicates with Adafruit IO through MQTT and REST for live dashboards and remote commands. All sensor readings are logged both locally (SQLite) and in a cloud PostgreSQL database (NeonDB), with automatic synchronization whenever the Pi regains internet connectivity. A Flask web application displays live data using Chart.js, shows historical trends retrieved from the cloud database, supports device control, and provides an interface for managing the home security system and viewing intrusion logs. Together, these components form a robust, modular, cloud-connected smart home platform.
 
 Materials
-Component Model/Description Quantity Link
 
 Raspberry Pi 4B 2GB or 4GB version 1 Raspberry Pi 4B
 
@@ -27,10 +23,6 @@ Actuator LED strip / Fan / Motor driver —
 Buzzer Murata 1
 
 Servo Motor
-
-Video
-
-https://www.youtube.com/shorts/p_izFyDbBKE 
 
 Setup Instructions
 Setup the pi sudo apt update && sudo apt upgrade -y sudo raspi-config # Enable Camera/I2C/SPI as needed
@@ -62,4 +54,5 @@ Add OTA (over-the-air) configuration updates
 Improve dashboard UI
 Add data analytics or predictive monitoring
 Optimize camera capture performance
+
 
